@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autumn Leaves — Was / Were</title>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background-image: url('https://i.postimg.cc/7Y1xvjmt/Background-(17).png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      position: relative;
+    }
+
+    /* =========================
+       ЛИСТЬЯ
+    ========================= */
+
+    .item {
+      position: absolute;
+      width: 105px;
+      height: 105px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      cursor: pointer;
+      z-index: 10;
+      user-select: none;
+      will-change: transform, left, top;
+      transition: opacity 0.25s, filter 0.2s;
+    }
+
+    .item:hover {
+      filter: brightness(1.12) drop-shadow(0 5px 7px rgba(0,0,0,.25));
+    }
+
+    .item.used {
+      pointer-events: none;
+      opacity: 0;
+      transform: scale(.5) !important;
+    }
+
+    /* =========================
+       СЧЕТ
+    ========================= */
+
+    .score {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      z-index: 100;
+      font-size: 22px;
+      font-weight: bold;
+      background: rgba(255,255,255,.82);
+      color: #4b2d20;
+      padding: 10px 18px;
+      border-radius: 12px;
+      box-shadow: 0 3px 12px rgba(0,0,0,.18);
+    }
+
+    /* =========================
+       ОКНО ВОПРОСА
+    ========================= */
+
+    .question-box {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(88%, 620px);
+      box-sizing: border-box;
+      background: rgba(255,255,255,.93);
+      padding: 24px;
+      border-radius: 18px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.28);
+      display: none;
+      z-index: 200;
+      text-align: center;
+    }
+
+    #questionText {
+      font-size: 25px;
+      font-weight: bold;
+      color: #3e2a20;
+      margin: 0 0 20px;
+      line-height: 1.35;
+    }
+
+    .choices {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .choice-btn {
+      min-width: 150px;
+      padding: 13px 20px;
+      border: none;
+      border-radius: 12px;
+      font-size: 20px;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+      transition: transform .15s, filter .15s;
+      box-shadow: 0 3px 8px rgba(0,0,0,.18);
+    }
+
+    .choice-btn:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.08);
+    }
+
+    .choice-btn:disabled {
+      cursor: default;
+      opacity: .78;
+    }
+
+    .choice-btn.correct-option {
+      background: #5f8f45;
+    }
+
+    .choice-btn.wrong-option {
+      background: #b55a42;
+    }
+
+    #result {
+      min-height: 28px;
+      margin-top: 14px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .correct {
+      color: #3d7b2f;
+    }
+
+    .incorrect {
+      color: #b43f2f;
+    }
+
+    #nextBtn {
+      margin-top: 12px;
+      font-size: 18px;
+      background: #6d4632;
+      color: white;
+      padding: 10px 22px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+    }
+
+    #nextBtn:hover {
+      background: #553524;
+    }
+
+    /* =========================
+       ФИНАЛЬНОЕ ОКНО
+    ========================= */
+
+    .final-message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(88%, 480px);
+      box-sizing: border-box;
+      background: rgba(255,255,255,.95);
+      padding: 32px;
+      border-radius: 18px;
+      box-shadow: 0 8px 35px rgba(0,0,0,.3);
+      display: none;
+      z-index: 300;
+      text-align: center;
+      color: #3e2a20;
+    }
+
+    .final-message h2 {
+      font-size: 32px;
+      margin-top: 0;
+    }
+
+    .play-again-btn {
+      margin-top: 18px;
+      font-size: 19px;
+      background: #6d4632;
+      color: white;
+      padding: 11px 24px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+    }
+
+    /* Небольшая подсказка */
+    .hint {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 100;
+      background: rgba(255,255,255,.72);
+      color: #5a3a2a;
+      padding: 9px 13px;
+      border-radius: 10px;
+      font-size: 15px;
+    }
+
+    @media (max-width: 600px) {
+      .item {
+        width: 78px;
+        height: 78px;
+      }
+
+      #questionText {
+        font-size: 20px;
+      }
+
+      .choice-btn {
+        min-width: 120px;
+        font-size: 17px;
+      }
+
+      .hint {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="score" id="score">Score: 0 / 15</div>
+  <div class="hint">🍂 Click a leaf!</div>
+
+  <div class="question-box" id="questionBox">
+    <p id="questionText"></p>
+
+    <div class="choices">
+      <button class="choice-btn correct-option" id="choiceA"></button>
+      <button class="choice-btn wrong-option" id="choiceB"></button>
+    </div>
+
+    <div id="result"></div>
+    <button id="nextBtn" style="display:none;">Next leaf</button>
+  </div>
+
+  <div class="final-message" id="finalMessage">
+    <h2>🍁 Great job! 🍁</h2>
+    <p id="finalScore"></p>
+    <button class="play-again-btn" id="playAgainBtn">Play again</button>
+  </div>
+
+<script>
+  /* =========================
+     15 ЗАДАНИЙ
+     Тема: was / were / there was / there were /
+           wasn't / weren't
+  ========================= */
+
+  const questions = [
+    {
+      text: "Yesterday, I ... at home.",
+      answer: "was",
+      wrong: "were"
+    },
+    {
+      text: "Tom and Ben ... in the park.",
+      answer: "were",
+      wrong: "was"
+    },
+    {
+      text: "There ... a big tree in the garden.",
+      answer: "was",
+      wrong: "were"
+    },
+    {
+      text: "There ... many leaves on the ground.",
+      answer: "were",
+      wrong: "was"
+    },
+    {
+      text: "She ... at school yesterday.",
+      answer: "was",
+      wrong: "were"
+    },
+    {
+      text: "We ... tired after the walk.",
+      answer: "were",
+      wrong: "was"
+    },
+    {
+      text: "There ... a small bird in the tree.",
+      answer: "was",
+      wrong: "were"
+    },
+    {
+      text: "There ... three children in the garden.",
+      answer: "were",
+      wrong: "was"
+    },
+    {
+      text: "I ... hungry in the morning.",
+      answer: "wasn't",
+      wrong: "weren't"
+    },
+    {
+      text: "The leaves ... green anymore.",
+      answer: "weren't",
+      wrong: "wasn't"
+    },
+    {
+      text: "There ... a bench near the tree.",
+      answer: "wasn't",
+      wrong: "weren't"
+    },
+    {
+      text: "There ... any flowers in the garden.",
+      answer: "weren't",
+      wrong: "wasn't"
+    },
+    {
+      text: "My friends ... at the playground yesterday.",
+      answer: "were",
+      wrong: "was"
+    },
+    {
+      text: "It ... cold and windy in the morning.",
+      answer: "was",
+      wrong: "were"
+    },
+    {
+      text: "There ... lots of colorful leaves on the path.",
+      answer: "were",
+      wrong: "was"
+    }
+  ];
+
+  /* 4 разных изображения листьев */
+  const leafImages = [
+    "https://i.postimg.cc/QxgXLv0f/GG2-Unit-4-4-(Vocabulary-Pictures)-(16).png",
+    "https://i.postimg.cc/QxgXLv0J/GG2-Unit-4-4-(Vocabulary-Pictures)-(17).png",
+    "https://i.postimg.cc/GhPc06qM/GG2-Unit-4-4-(Vocabulary-Pictures)-(18).png",
+    "https://i.postimg.cc/TYjR8BCn/GG2-Unit-4-4-(Vocabulary-Pictures)-(19).png"
+  ];
+
+  let score = 0;
+  let leaves = [];
+  let currentLeaf = null;
+  let currentQuestion = null;
+  let answered = false;
+
+  /* =========================
+     СОЗДАНИЕ ЛИСТА
+  ========================= */
+
+  function createLeaf(index) {
+    const leaf = document.createElement("div");
+    leaf.className = "item";
+
+    const size = window.innerWidth <= 600 ? 78 : 105;
+    const maxX = Math.max(0, window.innerWidth - size);
+    const maxY = Math.max(0, window.innerHeight - size);
+
+    let x = Math.random() * maxX;
+    let y = Math.random() * maxY;
+
+    /* Разная скорость и направление */
+    let vx = (Math.random() - 0.5) * 1.7;
+    let vy = 0.45 + Math.random() * 1.35;
+
+    /* Плавное "покачивание" листа */
+    let angle = Math.random() * 360;
+    let rotationSpeed = (Math.random() - 0.5) * 2.2;
+    let sway = Math.random() * Math.PI * 2;
+    let swaySpeed = 0.008 + Math.random() * 0.018;
+
+    /* Каждый лист получает один из 4 вариантов */
+    leaf.style.backgroundImage =
+      `url("${leafImages[index % leafImages.length]}")`;
+
+    leaf.style.left = x + "px";
+    leaf.style.top = y + "px";
+
+    leaf.addEventListener("click", () => openQuestion(leaf, index));
+
+    document.body.appendChild(leaf);
+    leaves.push(leaf);
+
+    function moveLeaf() {
+      if (!document.body.contains(leaf)) return;
+
+      /* Хаотичное движение */
+      sway += swaySpeed;
+      x += vx + Math.sin(sway) * 0.55;
+      y += vy;
+
+      /* Листья слегка меняют направление */
+      if (Math.random() < 0.012) {
+        vx += (Math.random() - 0.5) * 0.5;
+        vx = Math.max(-2.2, Math.min(2.2, vx));
+      }
+
+      /* Горизонтальные границы */
+      if (x <= 0) {
+        x = 0;
+        vx = Math.abs(vx) + 0.1;
+      }
+
+      if (x >= window.innerWidth - size) {
+        x = window.innerWidth - size;
+        vx = -Math.abs(vx) - 0.1;
+      }
+
+      /* Когда лист долетает вниз — появляется снова сверху */
+      if (y > window.innerHeight + size) {
+        y = -size - Math.random() * 100;
+        x = Math.random() * maxX;
+        vy = 0.45 + Math.random() * 1.35;
+      }
+
+      angle += rotationSpeed;
+
+      leaf.style.left = x + "px";
+      leaf.style.top = y + "px";
+      leaf.style.transform =
+        `rotate(${angle}deg)`;
+
+      requestAnimationFrame(moveLeaf);
+    }
+
+    moveLeaf();
+  }
+
+  /* =========================
+     ОТКРЫТИЕ ВОПРОСА
+  ========================= */
+
+  function openQuestion(leaf, index) {
+    if (answered) return;
+
+    currentLeaf = leaf;
+    currentQuestion = index;
+
+    const q = questions[index];
+
+    document.getElementById("questionText").innerText = q.text;
+
+    /* Каждый раз перемешиваем, какая кнопка слева */
+    const buttons = [
+      document.getElementById("choiceA"),
+      document.getElementById("choiceB")
+    ];
+
+    if (Math.random() < 0.5) {
+      buttons[0].innerText = q.answer;
+      buttons[0].dataset.correct = "true";
+      buttons[1].innerText = q.wrong;
+      buttons[1].dataset.correct = "false";
+    } else {
+      buttons[0].innerText = q.wrong;
+      buttons[0].dataset.correct = "false";
+      buttons[1].innerText = q.answer;
+      buttons[1].dataset.correct = "true";
+    }
+
+    buttons.forEach(btn => {
+      btn.disabled = false;
+      btn.style.transform = "";
+    });
+
+    document.getElementById("result").innerText = "";
+    document.getElementById("result").className = "";
+    document.getElementById("nextBtn").style.display = "none";
+    document.getElementById("questionBox").style.display = "block";
+
+    answered = false;
+  }
+
+  /* =========================
+     ПРОВЕРКА КНОПКИ
+  ========================= */
+
+  function chooseAnswer(event) {
+    if (answered) return;
+
+    answered = true;
+
+    const isCorrect = event.currentTarget.dataset.correct === "true";
+    const result = document.getElementById("result");
+
+    document.getElementById("choiceA").disabled = true;
+    document.getElementById("choiceB").disabled = true;
+
+    if (isCorrect) {
+      score++;
+
+      document.getElementById("score").innerText =
+        `Score: ${score} / ${questions.length}`;
+
+      result.innerText = "🍂 Correct! Well done!";
+      result.className = "correct";
+    } else {
+      result.innerText =
+        `🍁 Not quite! Correct answer: ${questions[currentQuestion].answer}`;
+      result.className = "incorrect";
+    }
+
+    if (currentLeaf) {
+      currentLeaf.classList.add("used");
+    }
+
+    document.getElementById("nextBtn").style.display = "inline-block";
+  }
+
+  /* =========================
+     СЛЕДУЮЩИЙ ЛИСТ
+  ========================= */
+
+  function nextQuestion() {
+    document.getElementById("questionBox").style.display = "none";
+
+    if (currentLeaf) {
+      currentLeaf.remove();
+      currentLeaf = null;
+    }
+
+    const remaining = document.querySelectorAll(".item").length;
+
+    if (remaining === 0) {
+      document.getElementById("finalScore").innerText =
+        `Your score: ${score} / ${questions.length}`;
+
+      document.getElementById("finalMessage").style.display = "block";
+    }
+
+    answered = false;
+  }
+
+  /* =========================
+     КНОПКИ
+  ========================= */
+
+  document.getElementById("choiceA")
+    .addEventListener("click", chooseAnswer);
+
+  document.getElementById("choiceB")
+    .addEventListener("click", chooseAnswer);
+
+  document.getElementById("nextBtn")
+    .addEventListener("click", nextQuestion);
+
+  document.getElementById("playAgainBtn")
+    .addEventListener("click", () => {
+      document.getElementById("finalMessage").style.display = "none";
+      startGame();
+    });
+
+  /* =========================
+     НАЧАЛО / ПЕРЕЗАПУСК
+  ========================= */
+
+  function startGame() {
+    score = 0;
+    currentLeaf = null;
+    currentQuestion = null;
+    answered = false;
+
+    document.getElementById("score").innerText =
+      `Score: 0 / ${questions.length}`;
+
+    document.getElementById("questionBox").style.display = "none";
+
+    leaves.forEach(leaf => leaf.remove());
+    leaves = [];
+
+    /* Ровно 15 листьев */
+    for (let i = 0; i < questions.length; i++) {
+      createLeaf(i);
+    }
+  }
+
+  startGame();
+</script>
+
+</body>
+</html></html>
